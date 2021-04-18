@@ -10,8 +10,9 @@ DUMP_ROOT = '/public/dumps/public/enwiki'
 DUMP_NAME = 'latest'
 
 class Finder:
-    def __init__(self, dump_name):
+    def __init__(self, dump_name, log_stream):
         self.dump_name = dump_name
+        self.log_stream = log_stream
         self.file_count = 0
         self.page_count = 0
         self.article_count = 0
@@ -60,7 +61,8 @@ class Finder:
                     self.blp_count += 1
                     if not 'ref' in content:
                         self.found += 1
-                        print(f'Found "{title}" ({repr(title)}, previous="{previous_title}") in {path}')
+                        print(title)
+                        self.log(f'Found "{title}" ({repr(title)}, previous="{previous_title}") in {path}')
 
 
     def get_text_from_singleton_node(self, node, tag):
@@ -74,19 +76,29 @@ class Finder:
         self.page_count += 1
         if self.page_count % 1000 == 0:
             dt = datetime.now() - self.t0
-            print((f'Done with {self.file_count} files, '
-                   f'{humanize.intcomma(self.page_count)} pages, '
-                   f'{humanize.intcomma(self.article_count)} articles '
-                   f'{humanize.intcomma(self.blp_count)} blps, '
-                   f'found {self.found} in {dt}'))
+            self.log(f'Done with {self.file_count} files, '
+                     f'{humanize.intcomma(self.page_count)} pages, '
+                     f'{humanize.intcomma(self.article_count)} articles '
+                     f'{humanize.intcomma(self.blp_count)} blps, '
+                     f'found {self.found} in {dt}')
+
+    def log(self, message):
+        if self.log_stream:
+            print(message, file=self.log_stream, flush=True)
+
 
 def main():
     parser = ArgumentParser()
     parser.add_argument('--file')
-    parser.add_argument('--xml')
+    parser.add_argument('--log')
     args = parser.parse_args()
     
-    finder = Finder(DUMP_NAME)
+    if args.log:
+        log_stream = open(args.log, 'w')
+    else:
+        log_stream = None
+
+    finder = Finder(DUMP_NAME, log_stream)
     file = args.file
     if file:
         finder.process_file(file)
