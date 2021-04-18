@@ -5,13 +5,14 @@ import bz2
 from xml.dom import pulldom
 from datetime import datetime
 import humanize
+import logging
+import sys
 
 DUMP_ROOT = '/public/dumps/public/enwiki'
 
 class Finder:
-    def __init__(self, dump_name, log_stream):
+    def __init__(self, dump_name):
         self.dump_name = dump_name
-        self.log_stream = log_stream
         self.file_count = 0
         self.page_count = 0
         self.article_count = 0
@@ -39,7 +40,7 @@ class Finder:
         title = None
         for event, node in doc:
             if event == pulldom.START_ELEMENT and node.tagName == 'page':
-                self.report_progress()
+                self.progress()
                 doc.expandNode(node)
                 ns = self.get_text_from_singleton_node(node, 'ns')
                 title_nodes = node.getElementsByTagName('title')
@@ -59,7 +60,7 @@ class Finder:
                     if not 'ref' in content:
                         self.found += 1
                         print(title)
-                        self.log(f'Found "{title}" in {path}')
+                        logging.info(f'Found "{title}" in {path}')
 
 
     def get_text_from_singleton_node(self, node, tag):
@@ -69,41 +70,44 @@ class Finder:
         return ''.join(n.nodeValue for n in cdata_nodes)
 
 
-    def report_progress(self):
+    def progress(self):
         self.page_count += 1
         if self.page_count % 1000 == 0:
-            dt = datetime.now() - self.t0
-            self.log(f'Done with {self.file_count} files, '
+            self.log_progress()
+
+    def log_progress(self):
+        dt = datetime.now() - self.t0
+        logging.info(f'Done with {self.file_count} files, '
                      f'{humanize.intcomma(self.page_count)} pages, '
                      f'{humanize.intcomma(self.article_count)} articles '
                      f'{humanize.intcomma(self.blp_count)} blps, '
                      f'found {self.found} in {dt}')
 
-    def log(self, message):
-        if self.log_stream:
-            print(message, file=self.log_stream, flush=True)
-
 
 def main():
     parser = ArgumentParser()
     parser.add_argument('--file')
-    parser.add_argument('--log')
     parser.add_argument('--dump_name')
     args = parser.parse_args()
-    
-    if args.log:
-        log_stream = open(args.log, 'w')
-    else:
-        log_stream = None
+
+    time_stamp = datetime.utcnow().replace(microsecond=0).isoformat()
+    logging.basicConfig(filename=f'no-refs.log.{time_stamp}',
+                        format='%(asctime)s %(levelname)s: %(message)s',
+                        level=logging.INFO)
+    logging.info(f'''command line: "{' '.join(sys.argv)}"''')
+    logging.info(f'started at {time_stamp}')
 
     assert args.dump_name or args.file
 
-    finder = Finder(args.dump_name, log_stream)
+    finder = Finder(args.dump_name)
     file = args.file
     if file:
         finder.process_file(file)
     else:
         finder.process_directory()
+
+    logging.info('all done')
+    finder.log_progress()
 
 
 if __name__ == '__main__':
