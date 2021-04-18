@@ -7,7 +7,6 @@ from datetime import datetime
 import humanize
 
 DUMP_ROOT = '/public/dumps/public/enwiki'
-DUMP_NAME = 'latest'
 
 class Finder:
     def __init__(self, dump_name, log_stream):
@@ -31,7 +30,7 @@ class Finder:
 
         for key, path in paths:
             self.file_count += 1
-            self.process_file(path)
+            self.process_file(str(path))
 
 
     def process_file(self, path):
@@ -89,6 +88,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('--file')
     parser.add_argument('--log')
+    parser.add_argument('--dump_name')
     args = parser.parse_args()
     
     if args.log:
@@ -96,7 +96,9 @@ def main():
     else:
         log_stream = None
 
-    finder = Finder(DUMP_NAME, log_stream)
+    assert args.dump_name or args.file
+
+    finder = Finder(args.dump_name, log_stream)
     file = args.file
     if file:
         finder.process_file(file)
