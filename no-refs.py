@@ -38,13 +38,11 @@ class Finder:
         stream = bz2.open(path) if path.endswith('.bz2') else open(path)
         doc = pulldom.parse(stream)
         title = None
-        previous_title = None
         for event, node in doc:
             if event == pulldom.START_ELEMENT and node.tagName == 'page':
                 self.report_progress()
                 doc.expandNode(node)
                 ns = self.get_text_from_singleton_node(node, 'ns')
-                previous_title = title
                 title_nodes = node.getElementsByTagName('title')
                 assert len(title_nodes) == 1
                 cdata_nodes = title_nodes[0].childNodes
@@ -62,7 +60,7 @@ class Finder:
                     if not 'ref' in content:
                         self.found += 1
                         print(title)
-                        self.log(f'Found "{title}" ({repr(title)}, previous="{previous_title}") in {path}')
+                        self.log(f'Found "{title}" in {path}')
 
 
     def get_text_from_singleton_node(self, node, tag):
