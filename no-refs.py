@@ -86,8 +86,10 @@ class Finder:
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument('--file')
-    parser.add_argument('--dump_name')
+    input_group = parser.add_mutually_exclusive_group(required=True)
+    input_group.add_argument('--file')
+    input_group.add_argument('--dump_name')
+
     args = parser.parse_args()
 
     time_stamp = datetime.utcnow().replace(microsecond=0).isoformat()
@@ -96,8 +98,6 @@ def main():
                         level=logging.INFO)
     logging.info(f'''command line: "{' '.join(sys.argv)}"''')
     logging.info(f'started at {time_stamp}')
-
-    assert args.dump_name or args.file
 
     finder = Finder(args.dump_name)
     file = args.file
