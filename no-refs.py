@@ -11,8 +11,7 @@ import sys
 DUMP_ROOT = '/public/dumps/public/enwiki'
 
 class Finder:
-    def __init__(self, dump_name):
-        self.dump_name = dump_name
+    def __init__(self):
         self.file_count = 0
         self.page_count = 0
         self.article_count = 0
@@ -20,10 +19,10 @@ class Finder:
         self.found = 0
         self.t0 = datetime.now()
 
-    def process_directory(self):
-        dump_dir = Path(DUMP_ROOT) / self.dump_name
+    def process_directory(self, dump_name):
+        dump_dir = Path(DUMP_ROOT) / dump_name
         paths = []
-        for path in dump_dir.glob(f'enwiki-{self.dump_name}-pages-articles[123456789]*.xml-p*bz2'):
+        for path in dump_dir.glob(f'enwiki-{dump_name}-pages-articles[123456789]*.xml-p*bz2'):
             m = re.match(r'.*xml-p([0-9]*)p([0-9]*)', path.name)
             key = int(m.group(1))
             paths.append((key, path))
@@ -99,12 +98,11 @@ def main():
     logging.info(f'''command line: "{' '.join(sys.argv)}"''')
     logging.info(f'started at {time_stamp}')
 
-    finder = Finder(args.dump_name)
-    file = args.file
-    if file:
-        finder.process_file(file)
+    finder = Finder()
+    if args.file:
+        finder.process_file(args.file)
     else:
-        finder.process_directory()
+        finder.process_directory(args.dump_name)
 
     logging.info('all done')
     finder.log_progress()
