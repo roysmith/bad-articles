@@ -117,6 +117,9 @@ class Finder:
         if self.page_count % 1000 == 0:
             self.log_progress()
 
+        if self.page_data.ns != '0':
+            return
+
         self.article_count += 1
 
 
@@ -146,9 +149,6 @@ class Finder:
 
 
     def do_revision(self):
-        if self.page_data.ns != '0':
-            return
-
         content = self.revision_data.text.lower()
         if '#redirect' in content:
             return
