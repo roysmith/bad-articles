@@ -64,6 +64,7 @@ class Finder:
 
     def process_file(self, path):
         self.path = path
+        logging.info(f"starting {path}")
         stream = bz2.open(path) if path.endswith('.bz2') else open(path)
         self.doc = parse(stream)
         self.cdata = []
@@ -76,7 +77,7 @@ class Finder:
                 self.cdata = []
             self.state[-1](event, node)
         self.file_count += 1
-
+        logging.info(f"done with {path}")
 
     def start(self, event, node):
         if event == START_DOCUMENT:
