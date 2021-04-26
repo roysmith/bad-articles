@@ -36,6 +36,7 @@ class Finder:
         self.path = None
         self.doc = None
         self.page_data = None
+        self.revision_data = None
         self.state = [self.start]
 
 
@@ -107,7 +108,7 @@ class Finder:
         if event == START_ELEMENT and node.tagName == 'ns':
             self.push(self.ns)
         if event == START_ELEMENT and node.tagName == 'revision':
-            self.page_data.revisions.append(Revision())
+            self.revision_data = Revision()
             self.push(self.revision)
 
 
@@ -116,21 +117,7 @@ class Finder:
         if self.page_count % 1000 == 0:
             self.log_progress()
 
-        if self.page_data.ns != '0':
-            return
-
         self.article_count += 1
-        content = self.page_data.revisions[-1].text.lower()
-        if '#redirect' in content:
-            return
-
-        if 'living people' in content:
-            self.blp_count += 1
-            if not 'ref' in content:
-                self.found += 1
-                title = self.page_data.title
-                print(title)
-                logging.info(f'Found "{title}" in {self.path}')
 
 
     def title(self, event, node):
@@ -147,6 +134,8 @@ class Finder:
 
     def revision(self, event, node):
         if event == END_ELEMENT and node.tagName == 'revision':
+            self.do_revision()
+            self.revision_data = None
             self.pop()
         if event == START_ELEMENT and node.tagName == 'id':
             self.push(self.id)
@@ -156,9 +145,26 @@ class Finder:
             self.push(self.text)
 
 
+    def do_revision(self):
+        if self.page_data.ns != '0':
+            return
+
+        content = self.revision_data.text.lower()
+        if '#redirect' in content:
+            return
+
+        if 'living people' in content:
+            self.blp_count += 1
+            if not 'ref' in content:
+                self.found += 1
+                title = self.page_data.title
+                print(title)
+                logging.info(f'Found "{title}" in {self.path}')
+
+
     def text(self, event, node):
         if event == END_ELEMENT and node.tagName == 'text':
-            self.page_data.revisions[-1].text = ''.join(self.cdata)
+            self.revision_data.text = ''.join(self.cdata)
             self.pop()
 
 
@@ -169,7 +175,7 @@ class Finder:
 
     def id(self, event, node):
         if event == END_ELEMENT and node.tagName == 'id':
-            self.page_data.revisions[-1].id = ''.join(self.cdata)
+            self.revision_data.id = ''.join(self.cdata)
             self.pop()
 
 
