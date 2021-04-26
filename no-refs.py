@@ -153,13 +153,17 @@ class Finder:
         if '#redirect' in content:
             return
 
-        if 'living people' in content:
-            self.blp_count += 1
-            if not 'ref' in content:
-                self.found += 1
-                title = self.page_data.title
-                print(title)
-                logging.info(f'Found "{title}" in {self.path}')
+        if 'living people' not in content:
+            return
+
+        self.blp_count += 1
+        if 'ref' in content:
+            return
+
+        self.found += 1
+        title = self.page_data.title
+        print(title)
+        logging.info(f'Found "{title}" in {self.path}')
 
 
     def text(self, event, node):
