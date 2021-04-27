@@ -36,7 +36,6 @@ class Finder:
         self.blp_count = 0
         self.found = 0
         self.t0 = datetime.now()
-        self.path = None
         self.doc = None
         self.page_data = None
         self.revision_data = None
@@ -67,9 +66,20 @@ class Finder:
 
 
     def process_file(self, path):
-        self.path = path
         logging.info(f"starting {path}")
         stream = bz2.open(path) if path.endswith('.bz2') else open(path)
+        self.process_stream(stream, path)
+        logging.info(f"done with {path}")
+
+
+    def process_stream(self, stream, path):
+        """Stream is a file object, path is a string containing the
+        human-readable name of the stream.  This is needed because the
+        file object returned by bz2.open() doesn't support the name
+        attribute.
+
+        """
+        self.path = path
         self.doc = parse(stream)
         self.cdata = []
         for event, node in self.doc:
@@ -81,7 +91,6 @@ class Finder:
                 self.cdata = []
             self.state[-1](event, node)
         self.file_count += 1
-        logging.info(f"done with {path}")
 
     def start(self, event, node):
         if event == START_DOCUMENT:
