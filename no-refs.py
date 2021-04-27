@@ -7,6 +7,7 @@ from datetime import datetime
 import humanize
 import logging
 import sys
+from dataclasses import dataclass
 
 DUMP_ROOT = '/public/dumps/public/enwiki'
 
@@ -17,8 +18,10 @@ class Page:
         self.revisions = []
 
 
+@dataclass
 class Revision:
-    pass
+    id: int
+    has_ref: bool
 
 
 class Finder:
@@ -108,7 +111,6 @@ class Finder:
         if event == START_ELEMENT and node.tagName == 'ns':
             self.push(self.ns)
         if event == START_ELEMENT and node.tagName == 'revision':
-            self.revision_data = Revision()
             self.push(self.revision)
 
 
@@ -121,6 +123,16 @@ class Finder:
             return
 
         self.article_count += 1
+
+        revisions = self.page_data.revisions
+        logging.debug(f"revisions={revisions}")
+        if revisions == [] or  any(rev.has_ref for rev in self.page_data.revisions):
+            return
+
+        self.found += 1
+        title = self.page_data.title
+        print(title)
+        logging.info(f'Found "{title}" in {self.path}')
 
 
     def title(self, event, node):
@@ -149,26 +161,20 @@ class Finder:
 
 
     def do_revision(self):
-        content = self.revision_data.text.lower()
-        if '#redirect' in content:
+        if '#redirect' in self.content:
             return
 
-        if 'living people' not in content:
+        if 'living people' not in self.content:
             return
 
         self.blp_count += 1
-        if 'ref' in content:
-            return
-
-        self.found += 1
-        title = self.page_data.title
-        print(title)
-        logging.info(f'Found "{title}" in {self.path}')
+        revision = Revision(self.revision_id, 'ref' in self.content)
+        self.page_data.revisions.append(revision)
 
 
     def text(self, event, node):
         if event == END_ELEMENT and node.tagName == 'text':
-            self.revision_data.text = ''.join(self.cdata)
+            self.content = ''.join(self.cdata).lower()
             self.pop()
 
 
@@ -179,7 +185,7 @@ class Finder:
 
     def id(self, event, node):
         if event == END_ELEMENT and node.tagName == 'id':
-            self.revision_data.id = ''.join(self.cdata)
+            self.revision_id = int(''.join(self.cdata))
             self.pop()
 
 
