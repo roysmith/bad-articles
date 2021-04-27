@@ -135,7 +135,7 @@ class Finder:
 
         revisions = self.page_data.revisions
         logging.debug(f"revisions={revisions}")
-        if revisions == [] or  any(rev.has_ref for rev in self.page_data.revisions):
+        if revisions == [] or any(rev.has_ref for rev in self.page_data.revisions):
             return
 
         self.found += 1
