@@ -257,7 +257,7 @@ LOGGING_CONFIG = {
     },
     'handlers': {
         'file': {
-            'level': 'INFO',
+            'level': 'DEBUG',
             'class': 'logging.FileHandler',
             'filename': None,
             'mode': 'w',  # https://bugs.python.org/issue27805
