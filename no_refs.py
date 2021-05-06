@@ -12,8 +12,6 @@ from dataclasses import dataclass
 
 DUMP_ROOT = '/public/dumps/public/enwiki'
 
-PAGE = object()
-
 progress_logger = logging.getLogger('progress')
 console_logger =  logging.getLogger('console')
 
