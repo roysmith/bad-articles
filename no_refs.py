@@ -17,6 +17,11 @@ from xml.dom.pulldom import parse, START_DOCUMENT, START_ELEMENT, END_ELEMENT, C
 
 import humanize
 
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=invalid-name
+# pylint: disable=logging-fstring-interpolation
+
 
 DUMP_ROOT = '/public/dumps/public/enwiki'
 
@@ -39,6 +44,7 @@ class Page:
 
 
 class Finder:
+    # pylint: disable=too-many-instance-attributes
     """docstring"""
 
 
@@ -109,7 +115,7 @@ class Finder:
             self.state[-1](event, node)
         self.file_count += 1
 
-    def start(self, event, node):
+    def start(self, event, _node):
         if event == START_DOCUMENT:
             self.push(self.document)
 
@@ -215,7 +221,8 @@ class Finder:
             self.pop()
 
 
-    def get_text_from_singleton_node(self, node, tag):
+    @staticmethod
+    def get_text_from_singleton_node(node, tag):
         children = node.getElementsByTagName(tag)
         assert len(children) == 1
         cdata_nodes = children[0].childNodes
