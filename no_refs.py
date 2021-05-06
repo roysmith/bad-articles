@@ -5,13 +5,14 @@ https://en.wikipedia.org/wiki/Wikipedia:Longstanding_unreferenced_articles
 
 from argparse import ArgumentParser
 import bz2
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 import logging
 import logging.config
 from pathlib import Path
 import re
 import sys
+from typing import List
 from xml.dom.pulldom import parse, START_DOCUMENT, START_ELEMENT, END_ELEMENT, CHARACTERS
 
 import humanize
@@ -22,17 +23,19 @@ DUMP_ROOT = '/public/dumps/public/enwiki'
 progress_logger = logging.getLogger('progress')
 console_logger =  logging.getLogger('console')
 
-class Page:
-    def __init__(self):
-        self.revisions = []
-        self.title = None
-        self.ns = None
-
 
 @dataclass
 class Revision:
     id: int
     has_ref: bool
+
+
+@dataclass
+class Page:
+    revisions: List[Revision] = field(default_factory=list)
+    title: str = ""
+    ns: str = ""
+
 
 
 class Finder:
