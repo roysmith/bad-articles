@@ -1,14 +1,21 @@
-from pathlib import Path
+"""Find longstanding unreferenced articles.  For background, see
+https://en.wikipedia.org/wiki/Wikipedia:Longstanding_unreferenced_articles
+
+"""
+
 from argparse import ArgumentParser
-import re
 import bz2
-from xml.dom.pulldom import parse, START_DOCUMENT, START_ELEMENT, END_ELEMENT, CHARACTERS
+from dataclasses import dataclass
 from datetime import datetime
-import humanize
 import logging
 import logging.config
+from pathlib import Path
+import re
 import sys
-from dataclasses import dataclass
+from xml.dom.pulldom import parse, START_DOCUMENT, START_ELEMENT, END_ELEMENT, CHARACTERS
+
+import humanize
+
 
 DUMP_ROOT = '/public/dumps/public/enwiki'
 
@@ -18,6 +25,8 @@ console_logger =  logging.getLogger('console')
 class Page:
     def __init__(self):
         self.revisions = []
+        self.title = None
+        self.ns = None
 
 
 @dataclass
@@ -41,7 +50,10 @@ class Finder:
         self.doc = None
         self.page_data = None
         self.revision_data = None
+        self.revision_id = None
         self.state = [self.start]
+        self.cdata = None
+        self.content = None
 
 
     def push(self, state):
