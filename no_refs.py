@@ -6,12 +6,16 @@ from xml.dom.pulldom import parse, START_DOCUMENT, START_ELEMENT, END_ELEMENT, C
 from datetime import datetime
 import humanize
 import logging
+import logging.config
 import sys
 from dataclasses import dataclass
 
 DUMP_ROOT = '/public/dumps/public/enwiki'
 
 PAGE = object()
+
+progress_logger = logging.getLogger('progress')
+console_logger =  logging.getLogger('console')
 
 class Page:
     def __init__(self):
@@ -43,13 +47,13 @@ class Finder:
 
 
     def push(self, state):
-        logging.debug(f"push({state})")
+        progress_logger.debug(f"push({state})")
         self.state.append(state)
 
 
     def pop(self):
         state = self.state.pop()
-        logging.debug(f"pop({state})")
+        progress_logger.debug(f"pop({state})")
 
 
     def process_directory(self, dump_name):
@@ -66,10 +70,10 @@ class Finder:
 
 
     def process_file(self, path):
-        logging.info(f"starting {path}")
+        progress_logger.info(f"starting {path}")
         stream = bz2.open(path) if path.endswith('.bz2') else open(path)
         self.process_stream(stream, path)
-        logging.info(f"done with {path}")
+        progress_logger.info(f"done with {path}")
 
 
     def process_stream(self, stream, path):
@@ -83,7 +87,7 @@ class Finder:
         self.doc = parse(stream)
         self.cdata = []
         for event, node in self.doc:
-            logging.debug(f"{list(s.__name__ for s in self.state)}: {event}, {node}")
+            progress_logger.debug(f"{list(s.__name__ for s in self.state)}: {event}, {node}")
             if event == CHARACTERS:
                 self.cdata.append(node.data)
                 continue
@@ -134,14 +138,14 @@ class Finder:
         self.article_count += 1
 
         revisions = self.page_data.revisions
-        logging.debug(f"revisions={revisions}")
+        progress_logger.debug(f"revisions={revisions}")
         if revisions == [] or any(rev.has_ref for rev in self.page_data.revisions):
             return
 
         self.found += 1
         title = self.page_data.title
-        print(title)
-        logging.info(f'Found "{title}" in {self.path}')
+        console_logger.info(title)
+        progress_logger.info(f'Found "{title}" in {self.path}')
 
 
     def title(self, event, node):
@@ -207,12 +211,11 @@ class Finder:
 
     def log_progress(self):
         dt = datetime.now() - self.t0
-        logging.info(f'Done with {self.file_count} files, '
-                     f'{humanize.intcomma(self.page_count)} pages, '
-                     f'{humanize.intcomma(self.article_count)} articles '
-                     f'{humanize.intcomma(self.blp_count)} blps, '
-                     f'found {self.found} in {dt}')
-
+        progress_logger.info(f'Done with {self.file_count} files, '
+                             f'{humanize.intcomma(self.page_count)} pages, '
+                             f'{humanize.intcomma(self.article_count)} articles '
+                             f'{humanize.intcomma(self.blp_count)} blps, '
+                             f'found {self.found} in {dt}')
 
 def main():
     parser = ArgumentParser()
@@ -224,12 +227,12 @@ def main():
     args = parser.parse_args()
 
     time_stamp = datetime.utcnow().replace(microsecond=0).isoformat()
-    logging.basicConfig(filename=args.log or f'no-refs.log.{time_stamp}',
-                        filemode='w',  # https://bugs.python.org/issue27805
-                        format='%(asctime)s %(levelname)s: %(message)s',
-                        level=logging.INFO)
-    logging.info(f'''command line: "{' '.join(sys.argv)}"''')
-    logging.info(f'started at {time_stamp}')
+    config = LOGGING_CONFIG.copy()
+    config['handlers']['file']['filename'] = args.log or f'no-refs.log.{time_stamp}'
+    logging.config.dictConfig(config)
+
+    progress_logger.info(f'''command line: "{' '.join(sys.argv)}"''')
+    progress_logger.info(f'started at {time_stamp}')
 
     finder = Finder()
     if args.file:
@@ -237,8 +240,49 @@ def main():
     else:
         finder.process_directory(args.dump_name)
 
-    logging.info('all done')
+    progress_logger.info('all done')
     finder.log_progress()
+
+
+
+LOGGING_CONFIG = {
+    'version': 1,
+    'formatters': {
+        'file_formatter': {
+            'format': '%(asctime)s %(levelname)s: %(message)s',
+        },
+        'console_formatter': {
+            'format': '%(message)s',
+        }
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': None,
+            'mode': 'w',  # https://bugs.python.org/issue27805
+            'formatter': 'file_formatter',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'console_formatter',
+            'stream': sys.stdout,
+        },
+    },
+    'loggers': {
+        'progress': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'console': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
 
 
 if __name__ == '__main__':
