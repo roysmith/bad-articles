@@ -21,6 +21,7 @@ import humanize
 # pylint: disable=missing-function-docstring
 # pylint: disable=invalid-name
 # pylint: disable=logging-fstring-interpolation
+# pylint: disable=too-many-instance-attributes
 
 
 DUMP_ROOT = '/public/dumps/public/enwiki'
@@ -44,10 +45,6 @@ class Page:
 
 
 class Finder:
-    # pylint: disable=too-many-instance-attributes
-    """docstring"""
-
-
     def __init__(self):
         self.path = None
         self.file_count = 0
